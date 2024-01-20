@@ -19,6 +19,8 @@
 # misc
 .DS_Store
 *.pem
+documents/*.pdf
+documents/*.txt
 
 # debug
 npm-debug.log*
