@@ -1,10 +1,15 @@
-import { OpenAIEmbeddings } from "langchain/embeddings/openai";
+import { OllamaEmbeddings } from "langchain/embeddings/ollama";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-import { OpenAI } from "langchain/llms/openai";
+import { Ollama } from "langchain/llms/ollama";
 import { loadQAStuffChain } from "langchain/chains";
 import { Document } from "langchain/document";
 import { timeout } from "./config";
 import { metadata } from "./app/layout";
+
+const ollamaembeddings = new OllamaEmbeddings({
+  model: "llama2", // default value
+  baseUrl: "http://localhost:11434", // default value
+});
 
 export const createPineconeIndex = async (
   client,
@@ -57,10 +62,10 @@ export const updatePinecone = async (client, indexName, docs) => {
     const chunks = await textSplitter.createDocuments([text]);
     console.log(`Text split into ${chunks.length} chunks`);
     console.log(
-      `Calling OpenAI's Embedding endpoint documents with ${chunks.length} text chunks ...`
+      `Calling Ollama's Embedding endpoint documents with ${chunks.length} text chunks ...`
     );
-    // 6. Create OpenAI embeddings for documents
-    const embeddingsArrays = await new OpenAIEmbeddings().embedDocuments(
+    // 6. Create Ollama embeddings for documents
+    const embeddingsArrays = await ollamaembeddings.embedDocuments(
       chunks.map((chunk) => chunk.pageContent.replace(/\n/g, " "))
     );
     console.log('Finished embedding documents');
@@ -109,7 +114,7 @@ export const queryPineconeVectorStoreAndQueryLLM = async (
   // 2. Retrieve the Pinecone index
   const index = client.Index(indexName);
   // 3. Create query embedding
-  const queryEmbedding = await new OpenAIEmbeddings().embedQuery(question)
+  const queryEmbedding = await ollamaembeddings.embedQuery(question)
   // 4. Query Pinecone index and return top 10 matches
   let queryResponse = await index.query({
     queryRequest: {
@@ -124,8 +129,11 @@ export const queryPineconeVectorStoreAndQueryLLM = async (
   // 6. Log the question being asked
   console.log(`Asking question: ${question}...`);
   if (queryResponse.matches.length) {
-    // 7. Create an OpenAI instance and load the QAStuffChain
-    const llm = new OpenAI({});
+    // 7. Create an Ollama instance and load the QAStuffChain
+    const llm = new Ollama({
+      model: "llama2", // default value
+      baseUrl: "http://localhost:11434", // Default value
+    });
     const chain = loadQAStuffChain(llm);
     // 8. Extract and concatenate page content from matched documents
     const concatenatedPageContent = queryResponse.matches

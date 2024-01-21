@@ -17,7 +17,7 @@ export async function GET() {
   })
 
   const docs = await loader.load()
-  const vectorDimensions = 1536
+  const vectorDimensions = 4096
 
   const client = new PineconeClient()
   await client.init({
